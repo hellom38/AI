@@ -30,6 +30,8 @@ class Variable:
     
     def store(self):
         stored_variables.append(self)
+    def __str__(self):
+        return self.name
     
 class Premise:
     def __init__(self,premise=""):
@@ -50,7 +52,7 @@ class Symbol:
         self.firstval = firstval
         self.secondval = secondval
 
-class Not(Symbol):
+class Not:
     def __init__(self, val):
         self.val = val
     
@@ -86,61 +88,80 @@ class Table_of_truth:
         self.generate_table_operators(premises)
 
 
-    def check_operators(self,premise,truth_table_premises={}):
+    def check_operators(self,premise,truth_table_premises={},truth_table_basepremises={}):
         x_list = {}
-        premival = premival.premise
-        if premival.firstval != Symbol or premival.secondval != Symbol:
-            if premival.__class__ == Not:
-                pass
-            if premival.__class__ == Conjunction:
-                for i in self.truth_table["Variables"][premival.firstval]:
-                    firstval = self.truth_table["Variables"][premival.firstval][i]
-                    secondval = self.truth_table["Variables"][premival.secondval][i]
-                    if firstval == True and secondval == True:
-                        x_list.update({
-                            i : True
-                        })
-                    else:
-                        x_list.update({
-                            i : False
-                        })
-            if premival.__class__ == Disjunction:
-                for i in self.truth_table["Variables"][premival.firstval]:
-                    firstval = self.truth_table["Variables"][premival.firstval][i]
-                    secondval = self.truth_table["Variables"][premival.secondval][i]
-                    if firstval == True or secondval == True:
-                        x_list.update({
-                            i : True
+        premival = premise.premise
+        if isinstance(premival,Symbol):
+            #if True:
+            if not isinstance(premival.firstval,Symbol) and not isinstance(premival.firstval,Not) and not isinstance(premival.secondval,Symbol) and not isinstance(premival.secondval,Not):
+                if premival.__class__ == Conjunction:
+                    for i in self.truth_table["Variables"][premival.firstval]:
+                        firstval = self.truth_table["Variables"][premival.firstval][i]
+                        secondval = self.truth_table["Variables"][premival.secondval][i]
+                        if firstval == True and secondval == True:
+                            x_list.update({
+                                i : True
                             })
-                    else:
-                        x_list.update({
-                            i : False
-                        })
-            if premival.__class__ == Conditional:
-                for i in self.truth_table["Variables"][premival.firstval]:
-                    firstval = self.truth_table["Variables"][premival.firstval][i]
-                    secondval = self.truth_table["Variables"][premival.secondval][i]
-                    if firstval == True and secondval == False:
-                        x_list.update({
-                            i : False
-                        })
-                    else:
-                        x_list.update({
-                            i : True
-                        })
-            if premival.__class__ == Biconditional:
-                for i in self.truth_table["Variables"][premival.firstval]:
-                    firstval = self.truth_table["Variables"][premival.firstval][i]
-                    secondval = self.truth_table["Variables"][premival.secondval][i]
-                    if (firstval == True and secondval == True) or (firstval == False and secondval == False):
-                        x_list.update({
-                            i : True
-                        })
-                    else:
-                        x_list.update({
-                            i : False
-                        })
-            truth_table_premises.update({ premise : x_list})
+                        else:
+                            x_list.update({
+                                i : False
+                            })
+                if premival.__class__ == Disjunction:
+                    for i in self.truth_table["Variables"][premival.firstval]:
+                        firstval = self.truth_table["Variables"][premival.firstval][i]
+                        secondval = self.truth_table["Variables"][premival.secondval][i]
+                        if firstval == True or secondval == True:
+                            x_list.update({
+                                i : True
+                                })
+                        else:
+                            x_list.update({
+                                i : False
+                            })
+                if premival.__class__ == Conditional:
+                    for i in self.truth_table["Variables"][premival.firstval]:
+                        firstval = self.truth_table["Variables"][premival.firstval][i]
+                        secondval = self.truth_table["Variables"][premival.secondval][i]
+                        if firstval == True and secondval == False:
+                            x_list.update({
+                                i : False
+                            })
+                        else:
+                            x_list.update({
+                                i : True
+                            })
+                if premival.__class__ == Biconditional:
+                    for i in self.truth_table["Variables"][premival.firstval]:
+                        firstval = self.truth_table["Variables"][premival.firstval][i]
+                        secondval = self.truth_table["Variables"][premival.secondval][i]
+                        if (firstval == True and secondval == True) or (firstval == False and secondval == False):
+                            x_list.update({
+                                i : True
+                            })
+                        else:
+                            x_list.update({
+                                i : False
+                            })
+                return truth_table_premises.update({ premise : x_list})
+            else:
+                smallest_child = premival
+                while isinstance(smallest_child.firstval,Symbol) or isinstance(smallest_child.secondval, Symbol):
+                    if isinstance(smallest_child.firstval,Symbol):
+                        smallest_child = smallest_child.firstval.child
+                    
+        else:
+            if isinstance(premival,Not):
+                    x_list.update({
+                        "val" : False
+                    })
+            else:
+                    x_list.update({
+                        "val" : True
+                    })
+            
+            return truth_table_basepremises.update({ premise : x_list})
+            
+                
             
 
 
@@ -170,13 +191,14 @@ class Table_of_truth:
             
             truth_table_variables.update({x : x_list})
         self.truth_table.update({"Variables" : truth_table_variables})
-        print(self.truth_table)
 
     def generate_table_operators(self,list_premises):
         truth_table_premises = {}
-        for x in enumerate(list_premises, start=1):  
+        for x in list_premises:
+            print("list:",x.premise)
             truth_table_premises = self.check_operators(x)
-        self.truth_table.update({"Premises" : truth_table_premises})
+        self.truth_table.update({"ComplexPremises" : truth_table_premises})
+        self.truth_table.update({"BasePremises" : truth_table_premises})
 
 
 
@@ -187,5 +209,4 @@ say_hi = Variable("Say hi to Jon","R")
 first = Premise(raining)
 second = Premise(Conditional(raining,Not(jon_running)))
 third = Premise(Biconditional(Not(jon_running),say_hi))
-
 truthtable = Table_of_truth(variables=stored_variables,premises=stored_premises)
